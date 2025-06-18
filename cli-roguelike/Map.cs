@@ -17,12 +17,26 @@ public class Map
 
     public void Generate()
     {
-        for (int i = 0; i < Width; i++) 
-        { 
+        for (int i = 0; i < Width; i++)
+        {
             for (int j = 0; j < Height; j++)
             {
                 _tiles[i, j].Type = TileType.Wall;
-            } 
-        }  
+            }
+        }
+    }
+
+    private void CreateRoom(int roomWidth, int roomHeight, int startX, int startY)
+    {
+        for (int i = startX; i < (startX + roomWidth); i++)
+        {
+            for (int j = startY; j < (startY + roomHeight); j++)
+            {
+                if ((i >= 0 && i < Width) && (j >= 0 && j < Height))
+                {
+                    _tiles[i, j].Type = TileType.Floor;
+                }
+            }
+        }
     }
 }
