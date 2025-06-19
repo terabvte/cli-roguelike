@@ -6,52 +6,48 @@ public class Map
     public int Height { get; private set; }
 
     private const int MAX_ROOMS = 10;
-    private const int MIN_ROOM_SIZE = 5;
-    private const int MAX_ROOM_SIZE = 15;
+    private const int MIN_ROOM_SIZE = 6;
+    private const int MAX_ROOM_SIZE = 12;
 
-    private Tile[,] _tiles;
+    private readonly Tile[,] _tiles;
 
     public Map(int width, int height)
     {
         Width = width;
         Height = height;
-
         _tiles = new Tile[width, height];
     }
-    
+
     public Tile GetTile(int x, int y)
     {
-        return _tiles[x, y];
+        // Boundary check to prevent crashes
+        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        {
+            return _tiles[x, y];
+        }
+
+        return new Tile { Type = TileType.Wall };
     }
 
-    public void Generate()
+    public (int, int) Generate()
     {
         var rand = new Random();
-
-        for (int i = 0; i < Width; i++)
-        {
-            for (int j = 0; j < Height; j++)
-            {
-                _tiles[i, j].Type = TileType.Wall;
-            }
-        }
+        FillWithWalls();
 
         int previousRoomCenterX = 0;
         int previousRoomCenterY = 0;
 
         for (int k = 0; k < MAX_ROOMS; k++)
         {
-            var randomWidth = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
-            var randomHeight = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
-
-            var randomX = rand.Next(0, Width);
-            var randomY = rand.Next(0, Height);
+            int randomWidth = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
+            int randomHeight = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
+            int randomX = rand.Next(0, Width - randomWidth);
+            int randomY = rand.Next(0, Height - randomHeight);
 
             CreateRoom(randomWidth, randomHeight, randomX, randomY);
 
-            var newRoomCenterX = randomX + randomWidth / 2;
-            var newRoomCenterY = randomY + randomHeight / 2;
-
+            int newRoomCenterX = randomX + (randomWidth / 2);
+            int newRoomCenterY = randomY + (randomHeight / 2);
 
             if (k == 0)
             {
@@ -67,18 +63,30 @@ public class Map
                 previousRoomCenterY = newRoomCenterY;
             }
         }
+
+        return (previousRoomCenterX, previousRoomCenterY);
     }
 
+    private void FillWithWalls()
+    {
+        for (int x = 0; x < Width; x++)
+        {
+            for (int y = 0; y < Height; y++)
+            {
+                _tiles[x, y].Type = TileType.Wall;
+            }
+        }
+    }
 
     private void CreateRoom(int roomWidth, int roomHeight, int startX, int startY)
     {
-        for (int i = startX; i < (startX + roomWidth); i++)
+        for (int x = startX; x < startX + roomWidth; x++)
         {
-            for (int j = startY; j < (startY + roomHeight); j++)
+            for (int y = startY; y < startY + roomHeight; y++)
             {
-                if ((i >= 0 && i < Width) && (j >= 0 && j < Height))
+                if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
                 {
-                    _tiles[i, j].Type = TileType.Floor;
+                    _tiles[x, y].Type = TileType.Floor;
                 }
             }
         }
@@ -86,23 +94,23 @@ public class Map
 
     private void CreateHorizontalTunnel(int x1, int x2, int y)
     {
-        var start = Math.Min(x1, x2);
-        var end = Math.Max(x1, x2);
-
-        for (int i = start; i <= end; i++)
+        for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
         {
-            _tiles[i, y].Type = TileType.Floor;
+            if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
+            {
+                _tiles[x, y].Type = TileType.Floor;
+            }
         }
     }
 
     private void CreateVerticalTunnel(int y1, int y2, int x)
     {
-        var start = Math.Min(y1, y2);
-        var end = Math.Max(y1, y2);
-
-        for (int i = start; i <= end; i++)
+        for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
         {
-            _tiles[x, i].Type = TileType.Floor;
+            if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
+            {
+                _tiles[x, y].Type = TileType.Floor;
+            }
         }
     }
 }
