@@ -18,6 +18,11 @@ public class Map
 
         _tiles = new Tile[width, height];
     }
+    
+    public Tile GetTile(int x, int y)
+    {
+        return _tiles[x, y];
+    }
 
     public void Generate()
     {
