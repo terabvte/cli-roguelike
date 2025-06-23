@@ -1,64 +1,63 @@
-namespace cli_roguelike;
-
-public class RenderEngine(int width, int height)
+namespace cli_roguelike
 {
-    private readonly char[,] _buffer = new char[width, height]; 
-    private readonly Player _lastPlayerState = new(-1, -1); 
-    private bool _isFirstDraw = true;
-
-    public void Draw(Map map, Player player)
+    public class RenderEngine(int width, int height)
     {
-        if (_isFirstDraw)
+        private readonly List<Actor> _lastKnownActors = [];
+        private bool _isFirstDraw = true;
+
+        public void Draw(Map map, List<Actor> currentActors)
         {
-            Console.Clear();
-            DrawAll(map, player);
-            _isFirstDraw = false;
-            return;
-        }
-
-        var tileAtOldPlayerPos = map.GetTile(_lastPlayerState.X, _lastPlayerState.Y);
-        Console.SetCursorPosition(_lastPlayerState.X, _lastPlayerState.Y);
-        Console.Write(GetCharForTile(tileAtOldPlayerPos.Type));
-
-        Console.SetCursorPosition(player.X, player.Y);
-        Console.Write(player.Marker);
-
-        _lastPlayerState.X = player.X;
-        _lastPlayerState.Y = player.Y;
-
-        Console.SetCursorPosition(0, map.Height);
-    }
-
-    private void DrawAll(Map map, Player player)
-    {
-        for (int y = 0; y < map.Height; y++)
-        {
-            for (int x = 0; x < map.Width; x++)
+            if (_isFirstDraw)
             {
-                var tile = map.GetTile(x, y);
-                char tileChar = GetCharForTile(tile.Type);
-                _buffer[x, y] = tileChar; // Update the buffer
-                Console.Write(tileChar);
+                Console.Clear();
+                DrawAllMap(map); 
+                _isFirstDraw = false;
             }
 
-            Console.WriteLine();
+            foreach (var actor in _lastKnownActors)
+            {
+                var tile = map.GetTile(actor.X, actor.Y);
+                Console.SetCursorPosition(actor.X, actor.Y);
+                Console.Write(GetCharForTile(tile.Type));
+            }
+
+            foreach (var actor in currentActors)
+            {
+                Console.SetCursorPosition(actor.X, actor.Y);
+                Console.Write(actor.Marker);
+            }
+
+            _lastKnownActors.Clear();
+            foreach (var actor in currentActors)
+            {
+                _lastKnownActors.Add(actor.Copy());
+            }
+
+            Console.SetCursorPosition(0, map.Height);
         }
 
-        Console.SetCursorPosition(player.X, player.Y);
-        Console.Write(player.Marker);
-        _buffer[player.X, player.Y] = player.Marker;
-
-        _lastPlayerState.X = player.X;
-        _lastPlayerState.Y = player.Y;
-    }
-
-    private char GetCharForTile(TileType tileType)
-    {
-        switch (tileType)
+        private void DrawAllMap(Map map)
         {
-            case TileType.Wall: return '#';
-            case TileType.Floor: return '.';
-            default: return ' ';
+            for (int y = 0; y < map.Height; y++)
+            {
+                for (int x = 0; x < map.Width; x++)
+                {
+                    var tile = map.GetTile(x, y);
+                    Console.Write(GetCharForTile(tile.Type));
+                }
+
+                Console.WriteLine();
+            }
+        }
+
+        private char GetCharForTile(TileType tileType)
+        {
+            switch (tileType)
+            {
+                case TileType.Wall: return '#';
+                case TileType.Floor: return '.';
+                default: return ' ';
+            }
         }
     }
 }

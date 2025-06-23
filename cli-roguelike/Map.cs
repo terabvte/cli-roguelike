@@ -1,88 +1,105 @@
-namespace cli_roguelike;
-
-public class Map
+namespace cli_roguelike
 {
-    public int Width { get; private set; }
-    public int Height { get; private set; }
-
-    private const int MAX_ROOMS = 10;
-    private const int MIN_ROOM_SIZE = 6;
-    private const int MAX_ROOM_SIZE = 12;
-
-    private readonly Tile[,] _tiles;
-
-    public Map(int width, int height)
+    public class Map
     {
-        Width = width;
-        Height = height;
-        _tiles = new Tile[width, height];
-    }
+        public int Width { get; private set; }
+        public int Height { get; private set; }
 
-    public Tile GetTile(int x, int y)
-    {
-        // Boundary check to prevent crashes
-        if (x >= 0 && x < Width && y >= 0 && y < Height)
+        private const int MAX_ROOMS = 10;
+        private const int MIN_ROOM_SIZE = 6;
+        private const int MAX_ROOM_SIZE = 12;
+
+        private readonly Tile[,] _tiles;
+        public List<Actor> Monsters { get; private set; }
+
+        public Map(int width, int height)
         {
-            return _tiles[x, y];
+            Width = width;
+            Height = height;
+            _tiles = new Tile[width, height];
+            Monsters = [];
         }
 
-        return new Tile { Type = TileType.Wall };
-    }
-
-    public (int, int) Generate()
-    {
-        var rand = new Random();
-        FillWithWalls();
-
-        int previousRoomCenterX = 0;
-        int previousRoomCenterY = 0;
-
-        for (int k = 0; k < MAX_ROOMS; k++)
+        public Tile GetTile(int x, int y)
         {
-            int randomWidth = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
-            int randomHeight = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
-            int randomX = rand.Next(0, Width - randomWidth);
-            int randomY = rand.Next(0, Height - randomHeight);
-
-            CreateRoom(randomWidth, randomHeight, randomX, randomY);
-
-            int newRoomCenterX = randomX + (randomWidth / 2);
-            int newRoomCenterY = randomY + (randomHeight / 2);
-
-            if (k == 0)
+            if (x >= 0 && x < Width && y >= 0 && y < Height)
             {
-                previousRoomCenterX = newRoomCenterX;
-                previousRoomCenterY = newRoomCenterY;
+                return _tiles[x, y];
             }
-            else
-            {
-                CreateHorizontalTunnel(previousRoomCenterX, newRoomCenterX, previousRoomCenterY);
-                CreateVerticalTunnel(previousRoomCenterY, newRoomCenterY, newRoomCenterX);
 
-                previousRoomCenterX = newRoomCenterX;
-                previousRoomCenterY = newRoomCenterY;
+            return new Tile { Type = TileType.Wall };
+        }
+
+        public (int, int) Generate()
+        {
+            var rand = new Random();
+            FillWithWalls();
+
+            int previousRoomCenterX = 0;
+            int previousRoomCenterY = 0;
+
+            for (int k = 0; k < MAX_ROOMS; k++)
+            {
+                int randomWidth = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
+                int randomHeight = rand.Next(MIN_ROOM_SIZE, MAX_ROOM_SIZE);
+                int randomX = rand.Next(0, Width - randomWidth);
+                int randomY = rand.Next(0, Height - randomHeight);
+
+                CreateRoom(randomWidth, randomHeight, randomX, randomY);
+
+                int newRoomCenterX = randomX + (randomWidth / 2);
+                int newRoomCenterY = randomY + (randomHeight / 2);
+
+                if (k == 0)
+                {
+                    previousRoomCenterX = newRoomCenterX;
+                    previousRoomCenterY = newRoomCenterY;
+                }
+                else
+                {
+                    var spawnX = rand.Next(randomX + 1, randomX + randomWidth - 1);
+                    var spawnY = rand.Next(randomY + 1, randomY + randomHeight - 1);
+                    Monsters.Add(new Goblin(spawnX, spawnY));
+
+                    CreateHorizontalTunnel(previousRoomCenterX, newRoomCenterX, previousRoomCenterY);
+                    CreateVerticalTunnel(previousRoomCenterY, newRoomCenterY, newRoomCenterX);
+
+                    previousRoomCenterX = newRoomCenterX;
+                    previousRoomCenterY = newRoomCenterY;
+                }
+            }
+
+            return (previousRoomCenterX, previousRoomCenterY);
+        }
+
+        private void FillWithWalls()
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                for (int y = 0; y < Height; y++)
+                {
+                    _tiles[x, y].Type = TileType.Wall;
+                }
             }
         }
 
-        return (previousRoomCenterX, previousRoomCenterY);
-    }
-
-    private void FillWithWalls()
-    {
-        for (int x = 0; x < Width; x++)
+        private void CreateRoom(int roomWidth, int roomHeight, int startX, int startY)
         {
-            for (int y = 0; y < Height; y++)
+            for (int x = startX; x < startX + roomWidth; x++)
             {
-                _tiles[x, y].Type = TileType.Wall;
+                for (int y = startY; y < startY + roomHeight; y++)
+                {
+                    if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
+                    {
+                        _tiles[x, y].Type = TileType.Floor;
+                    }
+                }
             }
         }
-    }
 
-    private void CreateRoom(int roomWidth, int roomHeight, int startX, int startY)
-    {
-        for (int x = startX; x < startX + roomWidth; x++)
+        private void CreateHorizontalTunnel(int x1, int x2, int y)
         {
-            for (int y = startY; y < startY + roomHeight; y++)
+            for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
             {
                 if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
                 {
@@ -90,26 +107,15 @@ public class Map
                 }
             }
         }
-    }
 
-    private void CreateHorizontalTunnel(int x1, int x2, int y)
-    {
-        for (int x = Math.Min(x1, x2); x <= Math.Max(x1, x2); x++)
+        private void CreateVerticalTunnel(int y1, int y2, int x)
         {
-            if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
+            for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
             {
-                _tiles[x, y].Type = TileType.Floor;
-            }
-        }
-    }
-
-    private void CreateVerticalTunnel(int y1, int y2, int x)
-    {
-        for (int y = Math.Min(y1, y2); y <= Math.Max(y1, y2); y++)
-        {
-            if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
-            {
-                _tiles[x, y].Type = TileType.Floor;
+                if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
+                {
+                    _tiles[x, y].Type = TileType.Floor;
+                }
             }
         }
     }
