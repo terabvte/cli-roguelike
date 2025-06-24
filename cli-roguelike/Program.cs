@@ -24,7 +24,7 @@
 
                 if (gameState == GameState.PlayerTurn)
                 {
-                    ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+                    var keyInfo = Console.ReadKey(true);
                     int newPlayerX = player.X;
                     int newPlayerY = player.Y;
 
@@ -41,19 +41,52 @@
                         case ConsoleKey.Escape: return;
                     }
 
-                    Tile targetTile = map.GetTile(newPlayerX, newPlayerY);
+                    var targetTile = map.GetTile(newPlayerX, newPlayerY);
                     if (targetTile.Type == TileType.Floor)
                     {
                         player.X = newPlayerX;
                         player.Y = newPlayerY;
-                        gameState = GameState.MonsterTurn; 
+                        gameState = GameState.MonsterTurn;
                     }
                 }
                 else if (gameState == GameState.MonsterTurn)
                 {
                     // monster AI here
 
-                    gameState = GameState.PlayerTurn; 
+                    var allMonsters = new List<Actor>(map.Monsters);
+
+                    foreach (var monster in allMonsters)
+                    {
+                        int dx = monster.X - player.X;
+                        int dy = monster.Y - player.Y;
+
+                        int newMonsterX;
+                        int newMonsterY;
+
+                        if (Math.Abs(dx) > Math.Abs(dy))
+                        {
+                            var tileToMove = Math.Sign(dx);
+
+                            newMonsterX = monster.X - tileToMove;
+                            newMonsterY = monster.Y;
+                        }
+                        else
+                        {
+                            var tileToMove = Math.Sign(dy);
+
+                            newMonsterX = monster.X;
+                            newMonsterY = monster.Y - tileToMove;
+                        }
+
+                        if (!((map.GetTile(newMonsterX, newMonsterY).Type == TileType.Wall) ||
+                              (player.X == newMonsterX) && (player.Y == newMonsterY)))
+                        {
+                            monster.X = newMonsterX;
+                            monster.Y = newMonsterY;
+                        }
+                    }
+
+                    gameState = GameState.PlayerTurn;
                 }
             }
         }
