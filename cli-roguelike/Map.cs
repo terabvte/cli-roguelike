@@ -124,6 +124,7 @@ namespace cli_roguelike
         }
 
         // --- IsInLineOfSight (CORRECTED & SIMPLIFIED) ---
+        // thanks gippity
         public bool IsInLineOfSight(int startX, int startY, int endX, int endY)
         {
             int dx = Math.Abs(endX - startX);
