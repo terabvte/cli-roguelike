@@ -9,6 +9,7 @@
 
             var map = new Map(width: 140, height: 32);
             var renderEngine = new RenderEngine(map.Width, map.Height);
+            var random = new Random();
 
             (int startX, int startY) = map.Generate();
             var player = new Player(startX, startY);
@@ -51,38 +52,52 @@
                 }
                 else if (gameState == GameState.MonsterTurn)
                 {
-                    // monster AI here
-
-                    var allMonsters = new List<Actor>(map.Monsters);
-
-                    foreach (var monster in allMonsters)
+                    // --- MONSTER AI LOGIC ---
+                    foreach (var monster in map.Monsters)
                     {
-                        int dx = monster.X - player.X;
-                        int dy = monster.Y - player.Y;
-
-                        int newMonsterX;
-                        int newMonsterY;
-
-                        if (Math.Abs(dx) > Math.Abs(dy))
+                        if (map.IsInLineOfSight(monster.X, monster.Y, player.X, player.Y))
                         {
-                            var tileToMove = Math.Sign(dx);
+                            int newMonsterX = monster.X;
+                            int newMonsterY = monster.Y;
 
-                            newMonsterX = monster.X - tileToMove;
-                            newMonsterY = monster.Y;
-                        }
-                        else
-                        {
-                            var tileToMove = Math.Sign(dy);
+                            // --- NEW "STUPIDITY CHECK" LOGIC ---
+                            // On a 1-in-5 chance...
+                            if (random.Next(1, 6) == 5)
+                            {
+                                // ...make a dumb, random move.
+                                int randomDirection = random.Next(0, 4);
+                                switch (randomDirection)
+                                {
+                                    case 0: newMonsterY--; break; // Up
+                                    case 1: newMonsterY++; break; // Down
+                                    case 2: newMonsterX--; break; // Left
+                                    case 3: newMonsterX++; break; // Right
+                                }
+                            }
+                            else
+                            {
+                                // ...otherwise, make the smart move towards the player.
+                                int dx = player.X - monster.X;
+                                int dy = player.Y - monster.Y;
 
-                            newMonsterX = monster.X;
-                            newMonsterY = monster.Y - tileToMove;
-                        }
+                                if (Math.Abs(dx) > Math.Abs(dy))
+                                {
+                                    newMonsterX += Math.Sign(dx);
+                                }
+                                else
+                                {
+                                    newMonsterY += Math.Sign(dy);
+                                }
+                            }
 
-                        if (!((map.GetTile(newMonsterX, newMonsterY).Type == TileType.Wall) ||
-                              (player.X == newMonsterX) && (player.Y == newMonsterY)))
-                        {
-                            monster.X = newMonsterX;
-                            monster.Y = newMonsterY;
+                            // --- COLLISION CHECK (runs for both smart and dumb moves) ---
+                            Tile targetTile = map.GetTile(newMonsterX, newMonsterY);
+                            if (targetTile.Type == TileType.Floor &&
+                                !(newMonsterX == player.X && newMonsterY == player.Y))
+                            {
+                                monster.X = newMonsterX;
+                                monster.Y = newMonsterY;
+                            }
                         }
                     }
 

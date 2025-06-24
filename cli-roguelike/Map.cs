@@ -79,6 +79,7 @@ namespace cli_roguelike
                 for (int y = 0; y < Height; y++)
                 {
                     _tiles[x, y].Type = TileType.Wall;
+                    _tiles[x, y].IsOpaque = true;
                 }
             }
         }
@@ -92,6 +93,7 @@ namespace cli_roguelike
                     if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
                     {
                         _tiles[x, y].Type = TileType.Floor;
+                        _tiles[x, y].IsOpaque = false;
                     }
                 }
             }
@@ -104,6 +106,7 @@ namespace cli_roguelike
                 if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
                 {
                     _tiles[x, y].Type = TileType.Floor;
+                    _tiles[x, y].IsOpaque = false;
                 }
             }
         }
@@ -115,8 +118,45 @@ namespace cli_roguelike
                 if (x > 0 && x < Width - 1 && y > 0 && y < Height - 1)
                 {
                     _tiles[x, y].Type = TileType.Floor;
+                    _tiles[x, y].IsOpaque = false;
                 }
             }
+        }
+
+        // --- IsInLineOfSight (CORRECTED & SIMPLIFIED) ---
+        public bool IsInLineOfSight(int startX, int startY, int endX, int endY)
+        {
+            int dx = Math.Abs(endX - startX);
+            int sx = startX < endX ? 1 : -1;
+            int dy = -Math.Abs(endY - startY);
+            int sy = startY < endY ? 1 : -1;
+            int err = dx + dy;
+
+            while (true)
+            {
+                // If we've reached the end, sight is clear.
+                if (startX == endX && startY == endY) return true;
+
+                // If the current tile is opaque, sight is blocked.
+                if (GetTile(startX, startY).IsOpaque) return false;
+
+                int e2 = 2 * err;
+                if (e2 >= dy)
+                {
+                    if (startX == endX) break;
+                    err += dy;
+                    startX += sx;
+                }
+
+                if (e2 <= dx)
+                {
+                    if (startY == endY) break;
+                    err += dx;
+                    startY += sy;
+                }
+            }
+
+            return false; // Should only be reached if start/end are the same and opaque
         }
     }
 }
